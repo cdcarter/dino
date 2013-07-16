@@ -12,7 +12,7 @@
 
 module Dino
   module Components
-  	class Printer
+  	class Printer < Core::MultiPin
   		# Most printers are standard configured for 19200. A few work at 9600.
   		# If your's does, don't worry, just pass a baud rate.
   		BAUDRATE = 19200
