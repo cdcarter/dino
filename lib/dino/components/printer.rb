@@ -35,6 +35,7 @@ module Dino
   			default_state	
   		end
 
+  		# set up all the important variables for printing.
   		def default_state
   			@prev_byte = '\n'
   			@column = 0
@@ -42,11 +43,24 @@ module Dino
   			@char_height = 24
   			@line_spacing = 8
   			@barcode_height = 50
+  			@dot_feed_time = 2100
+  			@dot_print_time = 30000
   		end
 
-  		def default_state!
+  		# reset the printer to its starting state as well as reset our 
+  		# variables used for tracking
+  		def reset
   			default_state
   			write_bytes(27,64)
+  		end
+
+  		def wake
+  			@timeout = 0
+  			write_bytes(255)
+  			(1..10).each do |i| 
+  				write_bytes(27)
+  				@timeout = .5
+  			end
   		end
 
   		# this is our janky port of the timeout method.
