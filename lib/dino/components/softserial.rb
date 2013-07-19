@@ -28,6 +28,10 @@ module Dino
       #   end
       # end
 
+      def print(string)
+        board.write Dino::Message.encode command: COMMAND, value: 2, aux_message: string
+      end
+
       def puts(string)
         board.write Dino::Message.encode command: COMMAND, value: 3, aux_message: string
       end
