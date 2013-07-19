@@ -32,7 +32,7 @@ module Dino
 
   		def after_initialize(options)
   			options[:baud] ||= BAUDRATE
-  			@baud = options.baud
+  			@baud = options[:baud]
   			@serial = SoftwareSerial.new(board:self.board, pins: self.pins, baud: self.baud)
   			reset_state	
   		end
@@ -69,6 +69,50 @@ module Dino
   			# size :standard
   		end
 
+      def begin(heat_time=255)
+        @timeout = 0.5
+        wake
+        reset
+
+        # Description of print settings from page 23 of the manual:
+        # ESC 7 n1 n2 n3 Setting Control Parameter Command
+        # Decimal: 27 55 n1 n2 n3
+        # Set "max heating dots", "heating time", "heating interval"
+        # n1 = 0-255 Max printing dots, Unit (8dots), Default: 7 (64 dots)
+        # n2 = 3-255 Heating time, Unit (10us), Default: 80 (800us)
+        # n3 = 0-255 Heating interval, Unit (10us), Default: 2 (20us)
+        # The more max heating dots, the more peak current will cost
+        # when printing, the faster printing speed. The max heating
+        # dots is 8*(n1+1).  The more heating time, the more density,
+        # but the slower printing speed.  If heating time is too short,
+        # blank page may occur.  The more heating interval, the more
+        # clear, but the slower printing speed.
+
+        write_bytes(27,55)        # Esc 7 (print settings)
+        write_bytes(20)           # Heating dots (20=balance of darkness vs no jams)
+        write_bytes(heat_time)    # Library default = 255 (max)
+        write_bytes(250)          # Heat interval (500 uS = slower, but darker)
+
+        # Description of print density from page 23 of the manual:
+        # DC2 # n Set printing density
+        # Decimal: 18 35 n
+        # D4..D0 of n is used to set the printing density.  Density is
+        # 50% + 5% * n(D4-D0) printing density.
+        # D7..D5 of n is used to set the printing break time.  Break time
+        # is n(D7-D5)*250us.
+        # (Unsure of the default value for either -- not documented)
+
+        print_density = 14
+        print_break_time = 4
+
+        write_bytes(18,35) # DC2 # (print density)
+        write_bytes((printBreakTime << 5) | printDensity)
+
+        @dot_feed_time = 2100
+        @dot_print_time = 30000
+
+      end
+
   		# this is our very low level write-a-byte method for all high-level
   		# printing.
   		def write(byte)
@@ -82,7 +126,7 @@ module Dino
   					@column = 0
   					byte = '\n'
   				else
-  					column += 1
+  					@column += 1
   				end
   				@timeout = wait
   				@prev_byte = byte
